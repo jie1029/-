@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #titleLabel{
+            visibility: hidden;
+        }
+        #link{
+            visibility: hidden;
+        }
+        #topMenu {
+             /* topMenu의 ID를 가진 태그의 스타일 지정 */
+             /*  topMenu의 높이를 30px로 설정(제대로 설정 안하면 아래 내용이 깨짐)
+            topMenu의 넓이를 850px로 설정(제대로 설정 안하면 브라우져 넓이가 좁아지면 깨짐) */
+            
+            width: 99vw; 
+            margin:0;
+            padding:0;
+            text-align: center;
+
+        }
+
+        #topMenu ul li {
+            /* topMenu의 ID를 가진 태그 안에 <ul> 태그 안에 <li> 태그의 스타일을 지정 */
+            list-style: none; 
+            color: white; 
+            background-color: #2d2d2d; 
+            
+            line-height: 30px; 
+            vertical-align: middle; 
+            text-align: center; 
+            display:inline;
+        }
+
+        #topMenu .menuLink {
+             /* topMenu 아이디를 가진 태그 안에 있는 menuLink 클래스 태그들의 스타일 설정 */
+            text-decoration: none; 
+            color: white; 
+            width: 150px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            font-family: "Trebuchet MS", Dotum, Arial; 
+            display:inline-block;
+        }
+
+        #topMenu .menuLink:hover {
+            /* topMenu 아이디를 가진 태그 안에 menuLink클래스를 가진 태그에 마우스가 over되면 스타일 설정 */
+            
+            background-color: #4d4d4d; 
+        }
+        h1{
+            text-align: center;
+        }
+        #fileUpload {
+            display: flex;
+            height: 20vh;
+            justify-content: center;
+            align-items: center;
+        }
+        .linkDiv{
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <nav id="topMenu">
+        <ul>
+            <li><a class="menuLink" href="/">설명서</a></li>
+            <li><a class="menuLink" href="/text">본문입력</a></li>
+            <li><a class="menuLink" href="/file">파일입력</a></li>
+
+        </ul>
+    </nav>
+
+    <h1>파일입력</h1>
+
+    <!-- <form action="/upload" enctype="multipart/form-data" method="POST"> -->
+        <div id="fileUpload">
+            <input type="file" id="csvFile" name="csvFile" accept=".csv" onchange="fileTypeCheck(this)"/>
+            
+            <input type="button" id="submit" value="전송" onclick="uploadFile()"/>
+            
+        </div>
+        <div class="linkDiv">
+            <a id="link" href="#">다운로드</a>
+        </div>
+        <br/>
+        
+        <!-- <input type="submit" title="업로드"/>
+    </form> -->
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.min.js"></script>
+    
+    <script type="text/javascript">
+        
+        function fileTypeCheck(obj){
+            pathpoint = obj.value.lastIndexOf(".");
+            filepoint = obj.value.substring(pathpoint+1,obj.length);
+            filetype = filepoint.toLowerCase();
+            filesize = obj.files[0].size;
+            if(filetype != "csv")
+            {
+                alert("csv파일만 가능합니다!");
+                parentObj  = obj.parentNode;
+                node = parentObj.replaceChild(obj.cloneNode(true),obj);
+                //$("#file").val("");
+		        document.getElementById("csvFile").value = "";    //초기화를 위한 추가 코드
+                document.getElementById("csvFile").select();        //초기화를 위한 추가 코드
+                return false;
+            }
+            else
+            {
+                console.log(obj.value);
+                console.log(filesize);
+            }
+
+            if(filesize > 1111014)
+            {
+                alert("1MB이내의 파일만 가능합니다!");
+                parentObj  = obj.parentNode;
+                node = parentObj.replaceChild(obj.cloneNode(true),obj);
+                //$("#file").val("");
+		        document.getElementById("csvFile").value = "";    //초기화를 위한 추가 코드
+                document.getElementById("csvFile").select();        //초기화를 위한 추가 코드
+                return false;
+            }
+
+        }
+        function uploadFile()
+        {
+            LoadingWithMask()
+            var formData = new FormData();
+            var csvFile = document.querySelector('#csvFile');
+            console.log(csvFile.files[0]);
+            formData.append("csvFile", csvFile.files[0]);
+            axios.post('/upload', formData, {
+                headers: {
+                'Content-Type': 'multipart/form-data'
+                }
+            })
+            .then((res)=>{
+                console.log(res);
+                const url = window.URL.createObjectURL(new Blob(["\ufeff"+res.data],{type: 'text/csv;charset=utf-8;'}));
+                const link = document.getElementById('link');
+                link.href = url;
+                link.setAttribute('download',"result_"+csvFile.files[0].name); //or any other extension
+                link.style.visibility = "visible"
+                closeLoadingWithMask()
+                // link.click();
+            })
+            .catch((err)=>{
+                console.log(err);
+            });
+        }
+
+        function LoadingWithMask() {
+            //화면의 높이와 너비를 구합니다.
+            var maskHeight = $(document).height();
+            var maskWidth = window.document.body.clientWidth;
+
+            //화면에 출력할 마스크를 설정해줍니다.
+            var mask = "<div id='mask' style='position:absolute; z-index:9000; background-color:#000000; display:none; left:0; top:0;'></div>";
+            var loadingImg = '';
+
+            loadingImg += "<div id='loadingImg' style='position: absolute; top:25%; left:50%; margin-left: -100px;'>";
+            loadingImg += " <img src='/loding' style='opacity:0.3; display: block; position:absolute; background-color:transparent;'/>";
+            loadingImg += "</div>";
+
+            //화면에 레이어 추가
+            $('body')
+                .append(mask)
+                .append(loadingImg)
+
+            //마스크의 높이와 너비를 화면 것으로 만들어 전체 화면을 채웁니다.
+            $('#mask').css({
+                'width': "99vw"
+                , 'height': "99vh"
+                , 'opacity': '0.3'
+            });
+
+            //마스크 표시
+            $('#mask').show();
+
+            //로딩중 이미지 표시
+            $('#loadingImg').show();
+        }
+
+        function closeLoadingWithMask() {
+            $('#mask, #loadingImg').hide();
+            $('#mask, #loadingImg').remove();
+        }
+    
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #titleLabel {
+            visibility: hidden;
+            text-align: center;
+        }
+        #showGeneratedTitle{
+            text-align: center;
+        }
+        #topMenu {
+            /* topMenu의 ID를 가진 태그의 스타일 지정 */
+            /*  topMenu의 높이를 30px로 설정(제대로 설정 안하면 아래 내용이 깨짐)
+            topMenu의 넓이를 850px로 설정(제대로 설정 안하면 브라우져 넓이가 좁아지면 깨짐) */
+
+            width: 99vw;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+
+        }
+
+        #topMenu ul li {
+            /* topMenu의 ID를 가진 태그 안에 <ul> 태그 안에 <li> 태그의 스타일을 지정 */
+            list-style: none;
+            color: white;
+            background-color: #2d2d2d;
+
+            line-height: 30px;
+            vertical-align: middle;
+            text-align: center;
+            display: inline;
+        }
+
+        #topMenu .menuLink {
+            /* topMenu 아이디를 가진 태그 안에 있는 menuLink 클래스 태그들의 스타일 설정 */
+            text-decoration: none;
+            color: white;
+            width: 150px;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: "Trebuchet MS", Dotum, Arial;
+            display: inline-block;
+        }
+
+        #topMenu .menuLink:hover {
+            /* topMenu 아이디를 가진 태그 안에 menuLink클래스를 가진 태그에 마우스가 over되면 스타일 설정 */
+
+            background-color: #4d4d4d;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        div#textUpload {
+            display: block;
+            position: relative;
+            top: 25%;
+            left: 50%;
+
+        }
+
+        textarea#text {
+            width: 300px;
+            height: 200px;
+            resize: none;
+
+            margin-left: -150px;
+        }
+
+        p#charCountLabel {
+            display: inline;
+        }
+      
+    </style>
+</head>
+
+<body>
+
+    <nav id="topMenu">
+        <ul>
+            <li><a class="menuLink" href="/">설명서</a></li>
+            <li><a class="menuLink" href="/text">본문입력</a></li>
+            <li><a class="menuLink" href="/file">파일입력</a></li>
+
+        </ul>
+    </nav>
+
+    <h1>본문입력</h1>
+    <div id="textUpload">
+        <textarea name="text" id="text" placeholder="본문"></textarea>
+        <br />
+        <p id="charCountLabel">글자수 ( <span id="charCount"></span> )</p>
+        <input type="button" id="submit" value="전송" />
+        
+    </div>
+    <h4 id="titleLabel">생성된 제목</h4>
+    <p id="showGeneratedTitle"></p>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.min.js"></script>
+
+    <script type="text/javascript">
+        window.onload = () => {
+            //jQuery에서 document.getElementById와 같은 결과를 얻기 위해선, jQuery 객체에 접근 후ㅡ 그 객체의 첫번째 요소(element)를 가져와야 한다 (JavaScript 객체들은 associative arrays 처럼 행동act 한다는것을 염두해라).
+            let request = document.getElementById("submit");
+            // let request = $('#submit')[0];
+            request.onclick = getRequest;
+
+        }
+
+        var charCount = document.getElementById("charCount");
+        $("#text").on("propertychange change keyup paste input", function () {
+
+            // 현재 변경된 데이터 셋팅
+            newValue = $(this).val();
+            var len = 0;
+            for (var i = 0; i < newValue.length; i++) {
+                if (escape(newValue.charAt(i)).length == 6) {
+                    len++;
+                }
+                len++;
+            }
+            // console.log(len / 2);
+            charCount.innerHTML = len / 2;
+            return len;
+        });
+
+        function fileTypeCheck(obj) {
+            pathpoint = obj.value.lastIndexOf(".");
+            filepoint = obj.value.substring(pathpoint + 1, obj.length);
+            filetype = filepoint.toLowerCase();
+
+            if (filetype != "csv") {
+                alert("csv파일만 가능합니다!");
+                parentObj = obj.parentNode;
+                node = parentObj.replaceChild(obj.cloneNode(true), obj);
+                //$("#file").val("");
+                document.getElementById("csvFile").value = "";    //초기화를 위한 추가 코드
+                document.getElementById("csvFile").select();        //초기화를 위한 추가 코드
+                return false;
+            }
+            else {
+                console.log(obj.value);
+            }
+
+        }
+        function fileDownload(csvfile) {
+            var frm = new FormData();
+            frm.append("csv", csvfile.files[0]);
+            console.log(csvfile.files[0]);
+            axios.post('/upload', frm, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            })
+                .then((res) => {
+                    console.log(res);
+                    console.log("엥?")
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+        }
+        function axiosRequestText() {
+            axios({
+                method: 'post', //통신 방식
+                url: '/titleGenerate', //통신할 페이지
+                data: { inputText: $('#text').val() } //인자로 보낼 데이터
+            })
+                .then(res => {
+                    data = JSON.parse(res.data.data)
+                    // $("#showGeneratedTitle").text(data.generatedTitle);//jquery
+                    document.getElementById("showGeneratedTitle").innerHTML = data.generatedTitle;
+                    // console.log(data.generatedTitle);
+                    document.getElementById("titleLabel").style.visibility = "visible"
+                    closeLoadingWithMask()
+                })
+                .catch(err => {
+                    console.log(err);
+                });
+        }
+        function getRequest(event) {
+
+            var inputTg = document.getElementById("text");
+            let show = document.getElementById("showGeneratedTitle");
+            
+            var inputText = inputTg.value
+            console.log('call', event.target.id);
+
+            if (inputText == "")
+                show.innerHTML = '본문을 입력해주세요!';
+            else {
+                show.innerHTML = "";
+                axiosRequestText()
+                LoadingWithMask()
+            }
+        }
+
+        function LoadingWithMask() {
+            //화면의 높이와 너비를 구합니다.
+            var maskHeight = $(document).height();
+            var maskWidth = window.document.body.clientWidth;
+
+            //화면에 출력할 마스크를 설정해줍니다.
+            var mask = "<div id='mask' style='position:absolute; z-index:9000; background-color:#000000; display:none; left:0; top:0;'></div>";
+            var loadingImg = '';
+
+            loadingImg += "<div id='loadingImg' style='position: absolute; top:25%; left:50%; margin-left: -100px;'>";
+            loadingImg += " <img src='/loding' style='opacity:0.3; display: block; position:absolute;'/>";
+            loadingImg += "</div>";
+
+            //화면에 레이어 추가
+            $('body')
+                .append(mask)
+                .append(loadingImg)
+
+            //마스크의 높이와 너비를 화면 것으로 만들어 전체 화면을 채웁니다.
+            $('#mask').css({
+                'width': maskWidth
+                , 'height': maskHeight
+                , 'opacity': '0.3'
+            });
+
+            //마스크 표시
+            $('#mask').show();
+
+            //로딩중 이미지 표시
+            $('#loadingImg').show();
+        }
+
+        function closeLoadingWithMask() {
+            $('#mask, #loadingImg').hide();
+            $('#mask, #loadingImg').remove();
+        }
+
+
+    </script>
+</body>
+
+</html>
